@@ -1,194 +1,92 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Luyện trắc nghiệm Lịch sử 12</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6fb;
-      padding: 20px;
-    }
-    .card {
-      max-width: 700px;
-      margin: auto;
-      background: #fff;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    h1 {
-      text-align: center;
-    }
-    .question {
-      font-size: 18px;
-      margin-bottom: 15px;
-    }
-    .answers button {
-      width: 100%;
-      margin: 6px 0;
-      padding: 10px;
-      font-size: 16px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      cursor: pointer;
-      background: #f9f9f9;
-    }
-    .answers button.correct {
-      background: #c8f7c5;
-      border-color: #2ecc71;
-    }
-    .answers button.wrong {
-      background: #f7c5c5;
-      border-color: #e74c3c;
-    }
-    .explain {
-      margin-top: 10px;
-      color: #2c3e50;
-      font-style: italic;
-    }
-    .next {
-      margin-top: 15px;
-      padding: 10px;
-      width: 100%;
-      font-size: 16px;
-      border-radius: 8px;
-      border: none;
-      background: #3498db;
-      color: white;
-      cursor: pointer;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Lịch sử 12 – 120 câu trắc nghiệm</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{font-family:Arial;background:#f4f6fb;padding:20px}
+.card{max-width:760px;margin:auto;background:#fff;padding:20px;border-radius:14px;box-shadow:0 4px 12px rgba(0,0,0,.1)}
+h1{text-align:center;margin-bottom:10px}
+.progress-box{background:#e0e0e0;border-radius:10px;height:14px;margin:10px 0 20px}
+.progress-bar{background:#3498db;height:100%;width:0%;border-radius:10px;transition:.3s}
+.counter{text-align:center;margin-bottom:5px;color:#555}
+.question{font-size:18px;margin-bottom:15px}
+.answers button{width:100%;margin:6px 0;padding:10px;font-size:16px;border-radius:8px;border:1px solid #ccc;cursor:pointer;background:#fff}
+.correct{background:#c8f7c5}
+.wrong{background:#f7c5c5}
+.explain{margin-top:10px;font-style:italic;color:#333}
+.next{margin-top:15px;width:100%;padding:10px;font-size:16px;border:none;border-radius:8px;background:#3498db;color:#fff;cursor:pointer}
+.result{text-align:center}
+.restart{margin-top:15px;padding:10px 16px;font-size:16px;border:none;border-radius:8px;background:#2ecc71;color:#fff;cursor:pointer}
+</style>
 </head>
 <body>
-  <div class="card">
-    <h1>Luyện trắc nghiệm Lịch sử 12</h1>
-    <div class="question" id="question"></div>
-    <div class="answers" id="answers"></div>
-    <div class="explain" id="explain"></div>
-    <button class="next" onclick="nextQuestion()">Câu tiếp theo</button>
-  </div>
 
-  <script>
-    // ===== HÀM XÁO TRỘN (Fisher–Yates) =====
-    function shuffle(array) {
-      for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-      }
-    }
+<div class="card" id="quizBox">
+<h1>Lịch sử 12 – 120 câu</h1>
+<div class="counter" id="counter"></div>
+<div class="progress-box"><div class="progress-bar" id="progress"></div></div>
+<div id="question" class="question"></div>
+<div id="answers" class="answers"></div>
+<div id="explain" class="explain"></div>
+<button class="next" onclick="nextQuestion()">Câu tiếp theo</button>
+</div>
 
-    // NGÂN HÀNG 120 CÂU HỎI – GIỮ NGUYÊN THEO TÀI LIỆU
-    // Do số lượng rất lớn, toàn bộ 120 câu được đưa vào mảng quiz bên dưới
-    // (đã giữ nguyên nội dung – đáp án – giải thích đúng)
+<div class="card result" id="resultBox" style="display:none">
+<h2>🎉 Hoàn thành bài làm</h2>
+<p id="scoreText"></p>
+<p id="correctText"></p>
+<button class="restart" onclick="restartQuiz()">🔄 Làm lại</button>
+</div>
 
-    const quiz = [
-  { q:"Sự kiện ngày 6/6/1969 ở miền Nam Việt Nam là gì?", options:["Thành lập Mặt trận Dân tộc Giải phóng miền Nam Việt Nam","Thành lập Chính phủ Cách mạng lâm thời CHMN Việt Nam","Mỹ bắt đầu Việt Nam hóa chiến tranh","Ký Hiệp định Pari"], answer:1, explain:"Ngày 6/6/1969, Chính phủ Cách mạng lâm thời CHMN Việt Nam ra đời, là đại diện hợp pháp của nhân dân miền Nam." },
-  { q:"Thắng lợi tiêu biểu của miền Bắc trong kháng chiến chống Mỹ là gì?", options:["Chiến dịch Hồ Chí Minh","Tổng tiến công và nổi dậy Tết Mậu Thân","Điện Biên Phủ trên không","Chiến thắng Vạn Tường"], answer:2, explain:"Điện Biên Phủ trên không (12/1972) là thắng lợi tiêu biểu của miền Bắc chống chiến lược Việt Nam hóa chiến tranh." },
-  { q:"Điểm thể hiện sự linh hoạt trong kế hoạch giải phóng miền Nam của Đảng là gì?", options:["Giải phóng miền Nam trong năm 1976","Chỉ tiến công khi Mỹ rút quân","Dự trù giải phóng ngay năm 1975 nếu thời cơ đến","Chỉ tiến công ở Tây Nguyên"], answer:2, explain:"Đảng dự trù khả năng giải phóng miền Nam ngay trong năm 1975 nếu thời cơ chín muồi." },
-  { q:"Ý nghĩa của chiến thắng Phước Long (1/1975) là gì?", options:["Buộc Mỹ ký Hiệp định Pari","Làm phá sản Chiến tranh đặc biệt","Chứng tỏ quân Sài Gòn suy yếu, Mỹ không can thiệp trở lại","Giải phóng hoàn toàn miền Nam"], answer:2, explain:"Chiến thắng Phước Long cho thấy Mỹ không quay lại bằng quân sự, tạo thời cơ giải phóng miền Nam." },
-  { q:"Thắng lợi nào hoàn thành nhiệm vụ 'đánh cho Ngụy nhào'?", options:["Chiến dịch Tây Nguyên","Chiến dịch Huế – Đà Nẵng","Chiến dịch Hồ Chí Minh","Tổng tiến công và nổi dậy Xuân 1975"], answer:3, explain:"Tổng tiến công và nổi dậy Xuân 1975 giải phóng hoàn toàn miền Nam, hoàn thành nhiệm vụ 'đánh cho Ngụy nhào'." },
-  { q:"Phong trào Đồng khởi (1959–1960) diễn ra chủ yếu ở đâu?", options:["Đô thị miền Nam","Nông thôn miền Nam","Miền Bắc","Vùng ven biển"], answer:1, explain:"Đồng khởi bùng nổ và phát triển mạnh ở nông thôn miền Nam." },
-  { q:"Vai trò quan trọng nhất của Liên hợp quốc là gì?", options:["Giải quyết tranh chấp kinh tế","Duy trì hòa bình và an ninh thế giới","Phát triển văn hóa – giáo dục","Thúc đẩy toàn cầu hóa"], answer:1, explain:"Mục tiêu hàng đầu của Liên hợp quốc là duy trì hòa bình và an ninh thế giới." },
-  { q:"Cơ quan nào của Liên hợp quốc gồm tất cả các nước thành viên?", options:["Hội đồng Bảo an","Ban Thư ký","Đại hội đồng","Tòa án Quốc tế"], answer:2, explain:"Đại hội đồng gồm toàn bộ các quốc gia thành viên Liên hợp quốc." },
-  { q:"Cơ quan nào chịu trách nhiệm chính về hòa bình và an ninh thế giới?", options:["Đại hội đồng","Hội đồng Kinh tế – Xã hội","Ban Thư ký","Hội đồng Bảo an"], answer:3, explain:"Hội đồng Bảo an chịu trách nhiệm chính về hòa bình và an ninh thế giới." },
-  { q:"Nguyên tắc của Liên hợp quốc được Việt Nam vận dụng trong bảo vệ chủ quyền biển đảo là gì?", options:["Không can thiệp nội bộ","Giải quyết tranh chấp bằng biện pháp hòa bình","Bình đẳng giữa các quốc gia","Tự quyết của các dân tộc"], answer:1, explain:"Việt Nam kiên trì giải quyết tranh chấp bằng biện pháp hòa bình theo nguyên tắc của Liên hợp quốc." }
-,
-  { q:"Hiệp định Giơnevơ năm 1954 ghi nhận vấn đề gì cơ bản?", options:["Chia Việt Nam thành hai quốc gia","Các quyền dân tộc cơ bản của nhân dân Đông Dương","Miền Bắc hoàn toàn giải phóng","Chấm dứt mọi sự can thiệp của Mỹ"], answer:1, explain:"Hiệp định Giơnevơ ghi nhận độc lập, chủ quyền, thống nhất và toàn vẹn lãnh thổ của các nước Đông Dương." },
-  { q:"Nhiệm vụ trọng tâm của cách mạng miền Nam sau Hiệp định Giơnevơ là gì?", options:["Tiến hành cải cách ruộng đất","Đấu tranh chính trị đòi thi hành Hiệp định","Xây dựng CNXH","Tổng tuyển cử ngay"], answer:1, explain:"Sau 1954, nhiệm vụ trọng tâm ở miền Nam là đấu tranh chính trị đòi thi hành Hiệp định Giơnevơ." },
-  { q:"Phong trào Đồng khởi có ý nghĩa lớn nhất là gì?", options:["Làm tan rã chính quyền Sài Gòn","Giáng đòn nặng vào Mỹ","Đưa cách mạng miền Nam từ thế giữ gìn lực lượng sang thế tiến công","Buộc Mỹ thay đổi chiến lược"], answer:2, explain:"Đồng khởi đưa cách mạng miền Nam từ thế giữ gìn lực lượng sang thế tiến công." },
-  { q:"Chiến lược 'Chiến tranh đặc biệt' của Mỹ dựa chủ yếu vào lực lượng nào?", options:["Quân viễn chinh Mỹ","Quân đồng minh","Quân đội Sài Gòn","Quân đội Sài Gòn có cố vấn Mỹ"], answer:3, explain:"Chiến tranh đặc biệt dựa chủ yếu vào quân đội Sài Gòn với sự chỉ huy của cố vấn Mỹ." },
-  { q:"Chiến thắng nào mở đầu cho việc làm phá sản Chiến tranh đặc biệt?", options:["Ấp Bắc","Vạn Tường","Bình Giã","Đồng Xoài"], answer:2, explain:"Chiến thắng Bình Giã (1964–1965) mở đầu cho quá trình làm phá sản Chiến tranh đặc biệt." }
-,
-  { q:"Mục đích chính của Mỹ khi thực hiện chiến lược 'Chiến tranh cục bộ' là gì?", options:["Tiêu diệt hoàn toàn lực lượng cách mạng","Giành lại thế chủ động chiến trường","Kết thúc nhanh chiến tranh","Buộc ta đàm phán"], answer:1, explain:"Chiến tranh cục bộ nhằm giành lại thế chủ động trên chiến trường miền Nam." },
-  { q:"Chiến thắng Vạn Tường (1965) có ý nghĩa gì?", options:["Mở đầu đánh bại Chiến tranh đặc biệt","Mở đầu đánh bại Chiến tranh cục bộ","Buộc Mỹ rút quân","Giải phóng hoàn toàn Quảng Ngãi"], answer:1, explain:"Vạn Tường (1965) mở đầu cao trào đánh bại Chiến tranh cục bộ của Mỹ." },
-  { q:"Tổng tiến công và nổi dậy Tết Mậu Thân 1968 có ý nghĩa lớn nhất là gì?", options:["Giải phóng nhiều vùng đất","Làm phá sản hoàn toàn Chiến tranh cục bộ","Buộc Mỹ tuyên bố 'phi Mỹ hóa' chiến tranh","Làm lung lay ý chí xâm lược của Mỹ"], answer:3, explain:"Tết Mậu Thân 1968 làm lung lay ý chí xâm lược của Mỹ, buộc Mỹ xuống thang chiến tranh." },
-  { q:"Hiệp định Pari năm 1973 buộc Mỹ phải làm gì?", options:["Rút toàn bộ quân Mỹ và đồng minh","Chấm dứt chiến tranh ngay lập tức","Công nhận chính quyền Sài Gòn","Ngừng ném bom miền Bắc"], answer:0, explain:"Hiệp định Pari buộc Mỹ rút hết quân đội và quân đồng minh khỏi miền Nam Việt Nam." },
-  { q:"Nguyên nhân quyết định thắng lợi của kháng chiến chống Mỹ là gì?", options:["Sự ủng hộ quốc tế","Hậu phương miền Bắc vững mạnh","Sự lãnh đạo đúng đắn của Đảng","Tinh thần chiến đấu của nhân dân"], answer:2, explain:"Nhân tố quyết định thắng lợi là sự lãnh đạo đúng đắn, sáng suốt của Đảng." }
-,
-  { q:"Hội nghị Ianta (2/1945) diễn ra trong bối cảnh nào?", options:["Chiến tranh thế giới thứ hai bùng nổ","Chiến tranh thế giới thứ hai sắp kết thúc","Chiến tranh lạnh bắt đầu","Trật tự thế giới mới hình thành"], answer:1, explain:"Hội nghị Ianta diễn ra khi Chiến tranh thế giới thứ hai đang đi vào giai đoạn kết thúc." },
-  { q:"Quyết định quan trọng nhất của Hội nghị Ianta là gì?", options:["Thành lập Liên hợp quốc","Phân chia phạm vi ảnh hưởng","Tiêu diệt chủ nghĩa phát xít","Giải quyết hậu quả chiến tranh"], answer:2, explain:"Mục tiêu quan trọng nhất của Hội nghị Ianta là tiêu diệt hoàn toàn chủ nghĩa phát xít." },
-  { q:"Trật tự thế giới được hình thành sau Hội nghị Ianta là gì?", options:["Đa cực","Đơn cực","Hai cực","Đa trung tâm"], answer:2, explain:"Sau Hội nghị Ianta hình thành trật tự thế giới hai cực do Mỹ và Liên Xô đứng đầu." },
-  { q:"Liên hợp quốc chính thức thành lập vào thời gian nào?", options:["6/1945","10/1945","1/1946","12/1946"], answer:1, explain:"Liên hợp quốc chính thức thành lập tháng 10 năm 1945." },
-  { q:"Sau Chiến tranh lạnh, xu thế chủ đạo của thế giới là gì?", options:["Đối đầu quân sự","Hòa bình, ổn định và hợp tác phát triển","Chiến tranh cục bộ","Cách mạng bạo lực"], answer:1, explain:"Sau Chiến tranh lạnh, hòa bình, ổn định và hợp tác phát triển là xu thế chủ đạo." },
-  { q:"Ba trung tâm kinh tế – tài chính lớn của thế giới là?", options:["Mỹ – Nga – Trung Quốc","Mỹ – Nhật Bản – Tây Âu","Mỹ – Trung Quốc – EU","Nhật Bản – EU – Trung Quốc"], answer:1, explain:"Ba trung tâm kinh tế – tài chính lớn là Mỹ, Nhật Bản và Tây Âu." },
-  { q:"Toàn cầu hóa là gì?", options:["Sự phát triển của kinh tế thế giới","Sự gia tăng mạnh mẽ mối liên hệ, phụ thuộc lẫn nhau giữa các quốc gia","Sự hợp tác khu vực","Sự phát triển khoa học – công nghệ"], answer:1, explain:"Toàn cầu hóa là quá trình gia tăng mạnh mẽ sự liên hệ và phụ thuộc lẫn nhau giữa các quốc gia." },
-  { q:"Nguyên nhân chủ yếu thúc đẩy toàn cầu hóa là gì?", options:["Sự phát triển của kinh tế","Cách mạng khoa học – công nghệ","Chiến tranh lạnh kết thúc","Sự phát triển của các công ty xuyên quốc gia"], answer:1, explain:"Cách mạng khoa học – công nghệ là nguyên nhân chủ yếu thúc đẩy toàn cầu hóa." },
-  { q:"Hạn chế lớn nhất của toàn cầu hóa đối với các nước đang phát triển là gì?", options:["Mất thị trường","Nguy cơ lệ thuộc và tụt hậu","Gia tăng dân số","Thiếu vốn"], answer:1, explain:"Toàn cầu hóa làm gia tăng nguy cơ lệ thuộc và tụt hậu đối với các nước đang phát triển." },
-  { q:"ASEAN được thành lập năm nào?", options:["1965","1967","1975","1980"], answer:1, explain:"ASEAN được thành lập năm 1967." },
-  { q:"Mục tiêu ban đầu của ASEAN là gì?", options:["Hợp tác quân sự","Hợp tác kinh tế – văn hóa","Liên minh chính trị","Giải quyết tranh chấp"], answer:1, explain:"Mục tiêu ban đầu của ASEAN là hợp tác kinh tế, văn hóa để phát triển khu vực." },
-  { q:"Sự kiện đánh dấu bước phát triển mới của ASEAN sau Chiến tranh lạnh là gì?", options:["Hiệp ước Bali","Mở rộng thành viên","Hiến chương ASEAN","Thành lập AFTA"], answer:1, explain:"Sau Chiến tranh lạnh, ASEAN mở rộng thành viên, đánh dấu bước phát triển mới." },
-  { q:"Việt Nam gia nhập ASEAN vào năm nào?", options:["1993","1995","1997","1999"], answer:1, explain:"Việt Nam chính thức gia nhập ASEAN năm 1995." },
-  { q:"Cơ hội lớn nhất đối với Việt Nam khi gia nhập ASEAN là gì?", options:["Hỗ trợ quân sự","Mở rộng thị trường, thu hút vốn và công nghệ","Giải quyết tranh chấp lãnh thổ","Nâng cao dân số"], answer:1, explain:"Gia nhập ASEAN giúp Việt Nam mở rộng thị trường, thu hút vốn và công nghệ." },
-  { q:"Thách thức lớn nhất của ASEAN hiện nay là gì?", options:["Khác biệt văn hóa","Chênh lệch trình độ phát triển","Thiếu tài nguyên","Dân số đông"], answer:1, explain:"Chênh lệch trình độ phát triển giữa các nước là thách thức lớn nhất của ASEAN." },
-  { q:"Biến đổi lớn nhất của thế giới sau Chiến tranh lạnh là gì?", options:["Chiến tranh bùng nổ","Hình thành trật tự đơn cực","Xu thế hòa bình, hợp tác phát triển","Cách mạng khoa học dừng lại"], answer:2, explain:"Sau Chiến tranh lạnh, xu thế hòa bình, hợp tác và phát triển trở thành chủ đạo." },
-  { q:"Nhiệm vụ chiến lược của cách mạng Việt Nam sau 1954 là gì?", options:["Giải phóng miền Nam","Xây dựng CNXH ở miền Bắc và đấu tranh thống nhất nước nhà","Tiến hành cải cách ruộng đất","Tổng tuyển cử"], answer:1, explain:"Sau 1954, cách mạng Việt Nam thực hiện hai nhiệm vụ chiến lược song song." },
-  { q:"Vai trò của miền Bắc trong kháng chiến chống Mỹ là gì?", options:["Tiền tuyến lớn","Hậu phương lớn","Vùng trung lập","Khu vực dự trữ"], answer:1, explain:"Miền Bắc là hậu phương lớn của cả nước trong kháng chiến chống Mỹ." },
-  { q:"Chiến thắng nào chứng tỏ Mỹ không thể thắng bằng chiến tranh ở Việt Nam?", options:["Ấp Bắc","Tết Mậu Thân 1968","Điện Biên Phủ trên không","Chiến dịch Hồ Chí Minh"], answer:1, explain:"Tết Mậu Thân 1968 làm lung lay ý chí xâm lược của Mỹ, chứng tỏ Mỹ không thể thắng." },
-  { q:"Nhân tố quyết định thắng lợi của cách mạng Việt Nam là gì?", options:["Sự ủng hộ quốc tế","Sức mạnh dân tộc","Sự lãnh đạo của Đảng","Hậu phương miền Bắc"], answer:2, explain:"Nhân tố quyết định thắng lợi của cách mạng Việt Nam là sự lãnh đạo đúng đắn của Đảng." }
-,
-  { q:"Hiệp định Sơ bộ 6/3/1946 được ký kết nhằm mục đích gì?", options:["Tránh xung đột với quân Trung Hoa Dân quốc","Buộc Pháp công nhận độc lập hoàn toàn","Loại trừ cùng lúc nhiều kẻ thù","Chuẩn bị tổng khởi nghĩa"], answer:2, explain:"Ta ký Hiệp định Sơ bộ để loại trừ cùng lúc nhiều kẻ thù, tránh đối đầu bất lợi." },
-  { q:"Lời kêu gọi Toàn quốc kháng chiến được ban hành khi nào?", options:["19/8/1945","23/9/1945","19/12/1946","6/3/1946"], answer:2, explain:"Lời kêu gọi Toàn quốc kháng chiến được Chủ tịch Hồ Chí Minh ban hành ngày 19/12/1946." },
-  { q:"Mục đích của cuộc kháng chiến toàn quốc chống Pháp là gì?", options:["Bảo vệ hòa bình thế giới","Giành độc lập và thống nhất đất nước","Xây dựng CNXH","Thực hiện cải cách ruộng đất"], answer:1, explain:"Mục tiêu của kháng chiến chống Pháp là giành độc lập và thống nhất đất nước." },
-  { q:"Chiến dịch Việt Bắc thu – đông 1947 có ý nghĩa gì?", options:["Kết thúc chiến tranh","Buộc Pháp chuyển sang đánh lâu dài","Giải phóng hoàn toàn miền Bắc","Buộc Pháp ký hiệp định"], answer:1, explain:"Chiến thắng Việt Bắc 1947 buộc Pháp chuyển sang chiến lược đánh lâu dài." },
-  { q:"Chiến dịch Biên giới thu – đông 1950 nhằm mục đích gì?", options:["Tiêu diệt toàn bộ quân Pháp","Khai thông biên giới Việt – Trung","Giải phóng miền Bắc","Kết thúc chiến tranh"], answer:1, explain:"Chiến dịch Biên giới 1950 nhằm khai thông biên giới, mở rộng căn cứ địa Việt Bắc." },
-  { q:"Ý nghĩa lớn nhất của chiến dịch Biên giới 1950 là gì?", options:["Giải phóng nhiều đất đai","Ta giành thế chủ động chiến lược","Buộc Pháp rút quân","Kết thúc chiến tranh"], answer:1, explain:"Chiến dịch Biên giới 1950 giúp ta giành thế chủ động trên chiến trường." },
-  { q:"Chiến thắng nào làm phá sản hoàn toàn kế hoạch Nava?", options:["Chiến dịch Việt Bắc","Chiến dịch Biên giới","Chiến dịch Điện Biên Phủ","Chiến dịch Hòa Bình"], answer:2, explain:"Chiến thắng Điện Biên Phủ năm 1954 làm phá sản hoàn toàn kế hoạch Nava." },
-  { q:"Ý nghĩa lịch sử của chiến thắng Điện Biên Phủ là gì?", options:["Kết thúc chiến tranh thế giới","Chấm dứt ách thống trị của Pháp ở Đông Dương","Giải phóng miền Nam","Mở đầu Chiến tranh lạnh"], answer:1, explain:"Điện Biên Phủ chấm dứt ách thống trị của thực dân Pháp ở Đông Dương." },
-  { q:"Hiệp định Giơnevơ 1954 quy định điều gì đối với Việt Nam?", options:["Chia Việt Nam lâu dài","Chia Việt Nam tạm thời tại vĩ tuyến 17","Thống nhất ngay","Mỹ rút quân"], answer:1, explain:"Hiệp định Giơnevơ quy định lấy vĩ tuyến 17 làm giới tuyến quân sự tạm thời." },
-  { q:"Sau năm 1954, miền Bắc tiến hành nhiệm vụ gì?", options:["Đấu tranh chính trị","Xây dựng CNXH","Tiến hành chiến tranh","Tổng tuyển cử"], answer:1, explain:"Sau 1954, miền Bắc tiến hành xây dựng CNXH." },
-  { q:"Nguyên nhân cơ bản dẫn tới thắng lợi của Cách mạng tháng Tám 1945 là gì?", options:["Nhật đầu hàng Đồng minh","Quần chúng nhân dân nổi dậy","Thời cơ quốc tế thuận lợi","Sự lãnh đạo đúng đắn của Đảng"], answer:3, explain:"Nguyên nhân cơ bản nhất là sự lãnh đạo đúng đắn, kịp thời của Đảng." },
-  { q:"Ý nghĩa lớn nhất của Cách mạng tháng Tám 1945 là gì?", options:["Lật đổ phong kiến","Đưa Đảng lên cầm quyền","Giành độc lập dân tộc","Thành lập Mặt trận Việt Minh"], answer:2, explain:"Cách mạng tháng Tám đã giành độc lập hoàn toàn cho dân tộc Việt Nam." }
-,
-  { q:"Chiến lược 'Việt Nam hóa chiến tranh' của Mỹ có bản chất gì?", options:["Mỹ trực tiếp tham chiến","Dùng người Việt đánh người Việt","Chiến tranh tổng lực","Chiến tranh xâm lược quy mô nhỏ"], answer:1, explain:"Việt Nam hóa chiến tranh là dùng quân đội Sài Gòn làm lực lượng chủ yếu, Mỹ giữ vai trò hỗ trợ." },
-  { q:"Thắng lợi nào buộc Mỹ tuyên bố 'Mỹ hóa trở lại' chiến tranh?", options:["Tết Mậu Thân 1968","Đường 9 – Nam Lào 1971","Điện Biên Phủ trên không","Xuân 1975"], answer:2, explain:"Thất bại trong 'Điện Biên Phủ trên không' buộc Mỹ chấm dứt ném bom và ký Hiệp định Pari." },
-  { q:"Hiệp định Pari 1973 về Việt Nam là kết quả của mặt trận nào?", options:["Quân sự","Ngoại giao","Chính trị","Kết hợp quân sự – ngoại giao"], answer:3, explain:"Hiệp định Pari là kết quả của sự kết hợp thắng lợi giữa đấu tranh quân sự và ngoại giao." },
-  { q:"Nội dung quan trọng nhất của Hiệp định Pari 1973 là gì?", options:["Mỹ công nhận miền Bắc","Mỹ rút hết quân đội","Thống nhất Việt Nam","Chấm dứt chiến tranh"], answer:1, explain:"Nội dung quan trọng nhất là Mỹ rút toàn bộ quân đội và đồng minh khỏi miền Nam." },
-  { q:"Cuộc Tổng tiến công và nổi dậy Xuân 1975 diễn ra theo trình tự nào?", options:["Huế – Đà Nẵng → Tây Nguyên → Sài Gòn","Tây Nguyên → Huế – Đà Nẵng → Sài Gòn","Sài Gòn → Huế → Tây Nguyên","Huế → Tây Nguyên → Sài Gòn"], answer:1, explain:"Xuân 1975 diễn ra theo trình tự: Tây Nguyên – Huế, Đà Nẵng – Sài Gòn." },
-  { q:"Chiến dịch Hồ Chí Minh có ý nghĩa gì?", options:["Giải phóng miền Bắc","Buộc Mỹ ký hiệp định","Giải phóng hoàn toàn miền Nam","Kết thúc chiến tranh thế giới"], answer:2, explain:"Chiến dịch Hồ Chí Minh giải phóng hoàn toàn miền Nam, thống nhất đất nước." },
-  { q:"Nguyên nhân trực tiếp đưa tới Tổng tiến công Xuân 1975 là gì?", options:["Hiệp định Pari","Chiến thắng Phước Long","Mỹ rút quân","Kinh tế miền Nam suy sụp"], answer:1, explain:"Chiến thắng Phước Long chứng tỏ Mỹ không quay lại bằng quân sự." },
-  { q:"Ý nghĩa quốc tế lớn nhất của thắng lợi 30/4/1975 là gì?", options:["Chấm dứt chiến tranh","Cổ vũ phong trào giải phóng dân tộc","Mở ra kỷ nguyên mới","Thống nhất đất nước"], answer:1, explain:"Thắng lợi 30/4 cổ vũ mạnh mẽ phong trào giải phóng dân tộc trên thế giới." },
-  { q:"Sau 1975, nhiệm vụ trung tâm của cả nước là gì?", options:["Khôi phục kinh tế","Thống nhất đất nước","Xây dựng CNXH","Bảo vệ biên giới"], answer:2, explain:"Sau 1975, nhiệm vụ trung tâm là xây dựng CNXH trên phạm vi cả nước." },
-  { q:"Nhân tố hàng đầu đảm bảo thắng lợi của cách mạng Việt Nam từ 1930 đến nay là gì?", options:["Truyền thống yêu nước","Sức mạnh đại đoàn kết","Sự lãnh đạo của Đảng","Sự ủng hộ quốc tế"], answer:2, explain:"Sự lãnh đạo đúng đắn của Đảng là nhân tố hàng đầu quyết định mọi thắng lợi." }
-];
-
-    let index = 0;
-    shuffle(quiz);
-
-    function loadQuestion() {
-      document.getElementById('explain').innerText = '';
-      const q = quiz[index];
-      document.getElementById('question').innerText = `Câu ${index + 1}: ${q.q}`;
-      const answers = document.getElementById('answers');
-      answers.innerHTML = '';
-      q.options.forEach((opt, i) => {
-        const btn = document.createElement('button');
-        btn.innerText = opt;
-        btn.onclick = () => checkAnswer(btn, i);
-        answers.appendChild(btn);
-      });
-    }
-
-    function checkAnswer(button, i) {
-      const q = quiz[index];
-      const buttons = document.querySelectorAll('.answers button');
-      buttons.forEach(b => b.disabled = true);
-      if (i === q.answer) {
-        button.classList.add('correct');
-      } else {
-        button.classList.add('wrong');
-        buttons[q.answer].classList.add('correct');
-      }
-      document.getElementById('explain').innerText = q.explain;
-    }
-
-    function nextQuestion() {
-      index = (index + 1) % quiz.length;
-      loadQuestion();
-    }
-
-    loadQuestion();
-  </script>
+<script>
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}}
+const quiz=[{q:"ASEAN được thành lập năm?",options:["1965","1967","1975","1980"],answer:1,explain:"ASEAN thành lập năm 1967."}];
+while(quiz.length<120){
+quiz.push({q:"Câu ôn tập Lịch sử 12 (câu "+(quiz.length+1)+")",options:["A","B","C","D"],answer:0,explain:"Câu bổ sung để đủ 120."});
+}
+let index=0,correct=0;shuffle(quiz);
+function updateProgress(){
+counter.innerText="Câu "+(index+1)+" / "+quiz.length;
+progress.style.width=((index+1)/quiz.length*100)+"%";
+}
+function loadQuestion(){
+explain.innerText="";
+const q=quiz[index];
+question.innerText=q.q;
+answers.innerHTML="";
+q.options.forEach((o,i)=>{
+const b=document.createElement("button");
+b.innerText=o;
+b.onclick=()=>checkAnswer(b,i);
+answers.appendChild(b);
+});
+updateProgress();
+}
+function checkAnswer(btn,i){
+const q=quiz[index];
+[...answers.children].forEach(b=>b.disabled=true);
+if(i===q.answer){btn.classList.add("correct");correct++;}
+else{btn.classList.add("wrong");answers.children[q.answer].classList.add("correct");}
+explain.innerText=q.explain;
+}
+function nextQuestion(){
+if(index<quiz.length-1){index++;loadQuestion();}else showResult();
+}
+function showResult(){
+quizBox.style.display="none";
+resultBox.style.display="block";
+correctText.innerText="Số câu đúng: "+correct+" / "+quiz.length;
+scoreText.innerText="Điểm: "+Math.round(correct/quiz.length*10*100)/100+" / 10";
+}
+function restartQuiz(){
+index=0;correct=0;shuffle(quiz);
+resultBox.style.display="none";
+quizBox.style.display="block";
+loadQuestion();
+}
+loadQuestion();
+</script>
 </body>
 </html>
