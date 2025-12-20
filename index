@@ -1,0 +1,325 @@
+\<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ôn Tập Lịch Sử 12 - Xáo Trộn Câu Hỏi</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #e67e22;
+            --bg-color: #f4f7f6;
+            --correct-bg: #d4edda;
+            --wrong-bg: #f8d7da;
+            --highlight: #fff3cd;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; background-color: var(--bg-color); padding: 10px; margin: 0; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: var(--accent-color); font-size: 24px; text-transform: uppercase; margin-bottom: 5px; }
+        
+        .sticky-controls { 
+            position: sticky; 
+            top: 0; 
+            background: white; 
+            z-index: 100; 
+            padding: 15px; 
+            border-bottom: 3px solid var(--accent-color); 
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .btn-group { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        
+        button { 
+            padding: 10px 15px; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            transition: 0.3s;
+            font-size: 14px;
+        }
+
+        #submit-btn { background: var(--accent-color); color: white; flex: 1; min-width: 150px; }
+        #retry-wrong-btn { background: #2980b9; color: white; display: none; }
+        #shuffle-btn { background: #8e44ad; color: white; }
+        #reset-btn { background: #7f8c8d; color: white; }
+        
+        button:hover { opacity: 0.8; transform: translateY(-1px); }
+
+        .question-box { margin-bottom: 25px; padding: 20px; border: 1px solid #eee; border-radius: 8px; background: #fff; }
+        .q-text { font-weight: bold; margin-bottom: 12px; display: block; color: var(--primary-color); font-size: 1.1em; }
+        .options { display: grid; gap: 10px; }
+        .opt-item { display: flex; align-items: center; padding: 12px; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; transition: background 0.2s; }
+        .opt-item:hover { background: #f8f9fa; }
+        
+        .correct-ans { background-color: var(--highlight) !important; border: 2px solid #ffc107 !important; font-weight: bold; }
+        .user-wrong { background-color: var(--wrong-bg) !important; border-color: #f5c6cb !important; }
+        .user-correct { background-color: var(--correct-bg) !important; border-color: #c3e6cb !important; }
+
+        #score-display { text-align: center; font-size: 1.2em; font-weight: bold; color: var(--primary-color); }
+        .q-index { color: var(--accent-color); margin-right: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>ÔN TẬP LỊCH SỬ 12 </h1>
+    
+    <div class="sticky-controls">
+        <div id="score-display">Nhấn nút để bắt đầu làm bài</div>
+        <div class="btn-group">
+            <button id="submit-btn" onclick="gradeQuiz()">NỘP BÀI</button>
+            <button id="retry-wrong-btn" onclick="retryWrong()">LÀM LẠI CÂU SAI</button>
+            <button id="shuffle-btn" onclick="shuffleAndReset()">XÁO TRỘN MỚI</button>
+            <button id="reset-btn" onclick="resetCurrent()">LÀM LẠI TỪ ĐẦU</button>
+        </div>
+    </div>
+
+    <form id="quiz-form">
+        <div id="quiz-content"></div>
+    </form>
+</div>
+
+<script>
+    // Dữ liệu gốc 120 câu
+    const originalQuestions = [
+        { q: "Ngày 6 - 6 - 1969, sự kiện nào sau đây đã diễn ra ở miền Nam Việt Nam?", a: ["Chính phủ Cách mạng lâm thời Cộng hòa miền Nam Việt Nam ra đời.", "Hội nghị cấp cao ba nước Việt Nam - Lào, Cam-pu-chia được triệu tập.", "Mỹ tuyên bố 'Mỹ hóa' trở lại cuộc chiến tranh xâm lược Việt Nam.", "Mỹ bắt đầu đưa quân đội và quân đồng minh vào miền Nam tham chiến."], c: 0 },
+        { q: "Trong cuộc chiến đấu chống chiến lược Việt Nam hóa chiến tranh (1969-1973), quân dân miền Bắc giành được thắng lợi nào?", a: ["Cánh đồng Chum - Xiêng Khoảng.", "“Điện Biên Phủ trên không”.", "Đường 9 - Nam Lào.", "Đường 14 - Phước Long."], c: 1 },
+        { q: "Nội dung thể hiện sự linh hoạt, sáng tạo của Đảng trong kế hoạch giải phóng miền Nam 1975-1976?", a: ["Thực hiện phương châm chiến lược, tiến công thần tốc.", "Tiến công vào những hướng quan trọng về chiến lược.", "Dự trù phương án giải phóng miền Nam ngay trong năm 1975 nếu thời cơ đến.", "Chủ trương đánh nhanh thắng nhanh."], c: 2 },
+        { q: "Chiến thắng đường 14-Phước Long (6-1-1975) cho thấy điều gì?", a: ["Sự suy yếu và bất lực của quân đội Sài Gòn.", "Cục diện chiến tranh không có sự thay đổi rõ rệt.", "Chính quyền Sài Gòn chính thức chấm dứt tồn tại.", "Mỹ thất bại trong chiến lược 'Chiến tranh đặc biệt'."], c: 0 },
+        { q: "Thắng lợi nào hoàn thành nhiệm vụ 'Ngụy nhào', giải phóng hoàn toàn miền Nam?", a: ["Cuộc Tiến công chiến lược năm 1972.", "Cuộc Tổng tiến công và nổi dậy Xuân 1968.", "Chiến dịch Đường 14 - Phước Long.", "Cuộc Tổng tiến công và nổi dậy Xuân 1975."], c: 3 },
+        { q: "Nhận xét đúng về phong trào Đồng khởi (1959-1960)?", a: ["Địa bàn diễn ra chủ yếu ở vùng nông thôn miền Nam.", "Có sự phối hợp chiến đấu chặt chẽ với Lào và Campuchia.", "Đấu tranh vũ trang là chủ yếu, kết hợp với chính trị.", "Là cuộc tổng tiến công của lực lượng vũ trang."], c: 0 },
+        { q: "Vai trò quan trọng nhất của tổ chức Liên hợp quốc?", a: ["Phát triển quan hệ hữu nghị.", "Giải quyết các tranh chấp bằng hòa bình.", "Giúp đỡ phát triển kinh tế - xã hội.", "Duy trì hòa bình và an ninh thế giới."], c: 3 },
+        { q: "Cơ quan nào của LHQ gồm tất cả các nước thành viên, họp mỗi năm 1 kỳ?", a: ["Đại hội đồng", "Hội đồng bảo an", "Hội đồng kinh tế - xã hội", "Hội đồng Quản thác"], c: 0 },
+        { q: "Cơ quan chính trị quan trọng nhất của LHQ, chịu trách nhiệm duy trì hòa bình?", a: ["Đại hội đồng", "Hội đồng bảo an", "Tòa án quốc tế", "Hội đồng quản thác"], c: 1 },
+        { q: "Việt Nam vận dụng nguyên tắc nào của LHQ đấu tranh bảo vệ biển đảo hiện nay?", a: ["Bình đẳng chủ quyền.", "Tôn trọng toàn vẹn lãnh thổ.", "Chung sống hòa bình.", "Giải quyết các tranh chấp quốc tế bằng biện pháp hòa bình."], c: 3 },
+        { q: "Mục tiêu và nguyên tắc hoạt động của LHQ quy định trong văn kiện nào?", a: ["Luật biển.", "Tuyên ngôn thủ tiêu chủ nghĩa thực dân.", "Hiến chương Liên hợp quốc.", "Tuyên ngôn Nhân quyền."], c: 2 },
+        { q: "Nội dung nào KHÔNG phải là nguyên tắc hoạt động của LHQ?", a: ["Không can thiệp vào nội bộ của bất kì nước nào.", "Hợp tác quốc tế để giải quyết các vấn đề kinh tế, xã hội.", "Giải quyết các tranh chấp quốc tế bằng biện pháp hòa bình.", "Tôn trọng các nghĩa vụ và luật pháp quốc tế."], c: 1 },
+        { q: "Hiệp định Sơ bộ (6-3-1946) được ký kết khi?", a: ["Việt Nam đang tránh đối đầu với nhiều kẻ thù cùng lúc.", "Chính phủ Pháp có thiện chí hòa bình.", "Việt Nam đang phát thế chủ động tiến công.", "Trung Hoa Dân quốc không cho Pháp ra Bắc."], c: 0 },
+        { q: "Nhiệm vụ cấp bách sau Cách mạng tháng Tám 1945 là gì?", a: ["Giải quyết ngoại xâm nội phản.", "Giúp đỡ cách mạng Lào và Campuchia.", "Kháng chiến chống Pháp ở Nam Bộ.", "Xây dựng chính quyền, giải quyết nạn đói, dốt, tài chính."], c: 3 },
+        { q: "Hiệp định Sơ bộ, Pháp công nhận Việt Nam Dân chủ Cộng hòa là?", a: ["Quốc gia độc lập.", "Quốc gia tự trị.", "Quốc gia độc lập tự do.", "Một quốc gia tự do."], c: 3 },
+        { q: "Khó khăn nghiêm trọng nhất sau Cách mạng tháng Tám 1945?", a: ["Nạn đói.", "Giặc dốt.", "Tài chính.", "Giặc ngoại xâm."], c: 3 },
+        { q: "Đường lối kháng chiến toàn dân xuất phát từ?", a: ["Truyền thống chống ngoại xâm, tư tưởng chiến tranh nhân dân.", "Yêu cầu của Liên hợp quốc.", "Sự giúp đỡ của phe XHCN.", "Sức mạnh của vũ khí hiện đại."], c: 0 },
+        { q: "Khi Pháp tiến công Việt Bắc (1947), Đảng ra chỉ thị:", a: ["Mở chiến dịch phản công.", "Phải phá tan cuộc tiến công mùa đông của giặc Pháp.", "Phát động toàn quốc kháng chiến.", "Kêu gọi toàn dân chống Pháp."], c: 1 },
+        { q: "Đường lối kháng chiến 1946-1954 phát huy truyền thống nào?", a: ["Tranh thủ giúp đỡ bên ngoài.", "Chiến tranh tâm lý.", "Đánh nhanh thắng nhanh.", "Chiến tranh nhân dân."], c: 3 },
+        { q: "Đoạn văn '...Chúng ta muốn hòa bình...' nằm trong văn kiện nào?", a: ["Tuyên ngôn Độc lập.", "Báo cáo tại Đại hội II.", "Lời kêu gọi toàn quốc kháng chiến.", "Báo cáo chính trị."], c: 2 },
+        { q: "Một trong những nguyên tắc của LHQ là?", a: ["Hợp tác kinh tế hiệu quả.", "Điều hòa hoạt động quốc gia.", "Hợp tác đảm bảo quyền con người.", "Tôn trọng toàn vẹn lãnh thổ và độc lập chính trị."], c: 3 },
+        { q: "VN làm ủy viên không thường trực Hội đồng Bảo an có ý nghĩa?", a: ["Cơ hội hòa nhập.", "Nâng cao vị thế của Việt Nam trên trường quốc tế.", "Nâng cao hợp tác kinh tế.", "Ký kết hiệp định thương mại."], c: 1 },
+        { q: "Vai trò của LHQ trong duy trì hòa bình quốc tế?", a: ["Thủ tiêu chế độ phân biệt chủng tộc.", "Hỗ trợ vốn và kĩ thuật.", "Hỗ trợ văn hóa giáo dục.", "Xây dựng văn bản quyền con người."], c: 0 },
+        { q: "Văn kiện LHQ ban hành nhằm duy trì hòa bình thế giới?", a: ["Tuyên ngôn Nhân quyền.", "Chương trình nghị sự 2030.", "Công ước quyền trẻ em.", "Hiệp ước cấm phổ biến vũ khí hạt nhân."], c: 3 },
+        { q: "Vai trò LHQ trong thúc đẩy kinh tế, tài chính?", a: ["Thúc đẩy giành độc lập thuộc địa.", "Giải quyết tranh chấp xung đột.", "Tạo môi trường kinh tế bình đẳng, hỗ trợ nước kém phát triển.", "Hỗ trợ y tế giáo dục."], c: 2 },
+        { q: "Vai trò LHQ trong đảm bảo quyền con người?", a: ["Thông qua văn kiện tạo cơ hội phát triển cho mọi người.", "Thúc đẩy phi thực dân hóa.", "Ngăn chặn chiến tranh thế giới.", "Tạo môi trường tài chính."], c: 0 },
+        { q: "Ý nghĩa Cách mạng tháng Tám KHÔNG bao gồm:", a: ["Buộc Pháp công nhận độc lập.", "Mở ra kỷ nguyên mới làm chủ đất nước.", "Phá tan xiềng xích nô lệ Pháp - Nhật.", "Đảng trở thành Đảng cầm quyền."], c: 0 },
+        { q: "Hội nghị Trung ương 8 (5/1941) thành lập mặt trận nào?", a: ["Mặt trận Liên Việt.", "Mặt trận Tổ quốc.", "Mặt trận Việt Minh.", "Mặt trận Phản đế."], c: 2 },
+        { q: "Khi CTTG II bùng nổ, Đảng Cộng sản Đông Dương đã?", a: ["Rút vào bí mật chuẩn bị cao trào mới.", "Đòi Pháp trao trả độc lập.", "Liên minh với Nhật.", "Tổng khởi nghĩa ngay."], c: 0 },
+        { q: "Ý nghĩa lịch sử TO LỚN NHẤT của Cách mạng tháng Tám?", a: ["Lật đổ ngai vàng phong kiến.", "Đem lại độc lập tự do.", "Người dân từ nô lệ thành người làm chủ đất nước.", "Chấm dứt thống trị Pháp - Nhật."], c: 2 },
+        { q: "Cách mạng tháng Tám diễn ra bằng hình thức?", a: ["Chính trị chủ yếu kết hợp vũ trang.", "Khởi nghĩa từng phần kết hợp chính trị.", "Vũ trang chủ yếu kết hợp chính trị.", "Vũ trang chủ yếu kết hợp khởi nghĩa toàn phần."], c: 0 },
+        { q: "Căn cứ địa chính và là hình ảnh thu nhỏ của VN mới (1939-1945)?", a: ["Tân Trào.", "Việt Bắc.", "Pác Bó.", "Tuyên Quang."], c: 1 },
+        { q: "Hội nghị Ianta diễn ra khi CTTG II?", a: ["Bước vào giai đoạn kết thúc.", "Bùng nổ lan rộng thế giới.", "Bùng nổ lan rộng châu Âu.", "Vừa kết thúc."], c: 0 },
+        { q: "Hội nghị Ianta thống nhất mục tiêu chung là?", a: ["Giải giáp quân Nhật ở Đông Dương.", "Chuyển từ đối đầu sang đối thoại.", "Tiêu diệt phát xít Đức và quân phiệt Nhật.", "Thiết lập trật tự đa cực."], c: 2 },
+        { q: "Nội dung nào KHÔNG PHẢI quyết định của hội nghị Ianta?", a: ["Phân chia khu vực ảnh hưởng.", "Tiêu diệt tận gốc phát xít.", "Ký hiệp ước với nước bại trận.", "Thành lập Liên hợp quốc."], c: 2 },
+        { q: "Hệ quả của quyết định Hội nghị Ianta là?", a: ["Trở thành khuôn khổ trật tự thế giới mới.", "Thành lập Liên hợp quốc.", "Chấm dứt CTTG II.", "Mở ra Chiến tranh lạnh."], c: 0 },
+        { q: "Theo Hội nghị Pốt-đam, việc giải giáp quân Nhật ở VN là?", a: ["Anh và Pháp ở phía Nam, Trung Hoa Dân quốc ở phía Bắc.", "Trung Hoa Dân quốc và Pháp.", "Anh ở phía Nam, Trung Hoa Dân quốc ở phía Bắc.", "Anh và Pháp."], c: 2 },
+        { q: "Sau CTTG II, Mỹ thực hiện chính sách đối ngoại?", a: ["Triển khai chiến lược toàn cầu làm bá chủ thế giới.", "Hòa bình hợp tác.", "Xóa bỏ CNXH.", "Đàn áp phong trào dân tộc."], c: 0 },
+        { q: "Điểm nổi bật chính sách đối ngoại Mỹ sau Chiến tranh lạnh?", a: ["Thiết lập trật tự 'đơn cực' do Mỹ lãnh đạo.", "Từ bỏ tham vọng bá chủ.", "Chỉ chống chủ nghĩa xã hội.", "Ủng hộ trật tự đa cực."], c: 0 },
+        { q: "Để phục hồi kinh tế sau chiến tranh, các nước Tây Âu đã?", a: ["Xâm lược thuộc địa.", "Tham gia kế hoạch Mác-san của Mỹ.", "Phát triển khoa học.", "Thành lập EU."], c: 1 },
+        { q: "Liên minh quân sự lớn nhất của phương Tây do Mỹ cầm đầu?", a: ["SEATO.", "ANZUS.", "NATO.", "CENTO."], c: 2 },
+        { q: "Nguyên nhân hàng đầu khiến Mỹ phát động Chiến tranh lạnh?", a: ["Khuếch trương quân sự.", "Sự đối lập mục tiêu và chiến lược với Liên Xô.", "Cần thêm đồng minh.", "Đe dọa Nhật và Tây Âu."], c: 1 },
+        { q: "Trật tự thế giới được thiết lập sau Chiến tranh lạnh là?", a: ["Đơn cực.", "Hai cực.", "Ba cực.", "Đa cực."], c: 3 },
+        { q: "Mục tiêu xây dựng cộng đồng ASEAN là?", a: ["Thành tổ chức mạnh nhất.", "Đoàn kết khi bị xâm lược.", "Củng cố quân sự.", "Đưa ASEAN trở thành cộng đồng ràng buộc hơn."], c: 3 },
+        { q: "Cơ sở pháp lý để xây dựng Cộng đồng ASEAN?", a: ["Hiến chương ASEAN.", "Tuyên bố Băng-cốc.", "Hiến chương Liên hợp quốc.", "Hiệp ước Ba-li 1976."], c: 0 },
+        { q: "Kế hoạch xây dựng Cộng đồng ASEAN thông qua tại hội nghị nào?", a: ["ASEAN 37 (2020).", "ASEAN 14 (2009).", "ASEAN 10 (2004).", "ASEAN 11 (2005)."], c: 2 },
+        { q: "Sự kiện ngày 22-11-2015 đánh dấu?", a: ["Cộng đồng ASEAN được thành lập.", "Đông Nam Á giành độc lập.", "Sự phát triển nhảy vọt.", "Hoàn thành mở rộng thành viên."], c: 0 },
+        { q: "Đâu KHÔNG phải là trụ cột của Cộng đồng ASEAN?", a: ["Chính trị - An ninh.", "Văn hóa - Xã hội.", "An ninh - Quốc phòng.", "Kinh tế."], c: 2 },
+        { q: "Thách thức ASEAN đối mặt trong xây dựng cộng đồng?", a: ["Đa dạng về chế độ chính trị.", "Khó khăn địa lý.", "Quốc gia không có biển.", "Khí hậu khắc nghiệt."], c: 0 },
+        { q: "Xu thế hòa hoãn Đông - Tây xuất hiện khi nào?", a: ["Cuối những năm 60.", "Đầu những năm 70.", "Giữa những năm 70.", "Cuối những năm 70."], c: 1 },
+        { q: "Tháng 1-1949, Liên Xô và Đông Âu thành lập tổ chức nào?", a: ["Kế hoạch Mác-san.", "Hiệp ước Vácsava.", "Hội đồng tương trợ kinh tế (SEV).", "Định ước Henxiki."], c: 2 },
+        { q: "Tổ chức liên minh chính trị-quân sự của các nước XHCN châu Âu?", a: ["Liên minh châu Âu.", "NATO.", "Tổ chức Hiệp ước Vácsava.", "Hội đồng tương trợ kinh tế."], c: 2 },
+        { q: "Nguyên nhân hàng đầu buộc Mỹ - Xô chấm dứt Chiến tranh lạnh?", a: ["Chạy đua vũ trang tốn kém, suy giảm thế mạnh.", "Khủng hoảng kinh tế.", "Cần ổn định vị thế.", "Cần thời gian xây quân đội."], c: 0 },
+        { q: "Xu thế chủ đạo trong quan hệ cường quốc sau Chiến tranh lạnh?", a: ["Đối thoại, thỏa hiệp, tránh xung đột trực tiếp.", "Tôn trọng Liên hợp quốc.", "Hợp tác không mâu thuẫn.", "Hòa bình không xung đột."], c: 0 },
+        { q: "Xu thế Toàn cầu hóa là hệ quả của?", a: ["Cách mạng khoa học công nghệ.", "Chiến tranh lạnh.", "Cách mạng công nghiệp XVII.", "Khủng hoảng năng lượng."], c: 0 },
+        { q: "Bản chất của Toàn cầu hóa là?", a: ["Tác động tích cực.", "Tác động tiêu cực.", "Mối quan hệ tác động phụ thuộc lẫn nhau giữa các quốc gia.", "Biểu hiện kinh tế."], c: 2 },
+        { q: "Quốc gia nào nằm trong nhóm G20?", a: ["Thái Lan.", "Việt Nam.", "Nam Phi.", "Ai Cập."], c: 2 },
+        { q: "Thúc đẩy nhanh sự phát triển lực lượng sản xuất là?", a: ["Bản chất toàn cầu hóa.", "Tác động tích cực.", "Biểu hiện.", "Tác động tiêu cực."], c: 1 },
+        { q: "Nội dung nào KHÔNG PHẢI biểu hiện của toàn cầu hóa?", a: ["Thương mại quốc tế phát triển.", "Công ty xuyên quốc gia.", "Hình thành 3 trung tâm kinh tế lớn.", "Quốc tế hóa tài chính."], c: 2 },
+        { q: "Tổ chức liên kết chính trị - kinh tế lớn nhất thế giới?", a: ["Liên minh châu Âu (EU).", "APEC.", "ASEM.", "FTAA."], c: 0 },
+        { q: "Sau Chiến tranh lạnh, các nước lấy kinh tế làm trọng điểm vì?", a: ["Hòa bình được bảo vệ.", "Kinh tế trở thành nội dung căn bản trong quan hệ quốc tế.", "Hết chạy đua vũ trang.", "Sức mạnh không dựa vào quốc phòng."], c: 1 },
+        { q: "Sau chiến tranh lạnh, Tây Âu điều chỉnh đối ngoại?", a: ["Liên minh chặt chẽ với Mỹ.", "Đối trọng của Mỹ.", "Mở rộng quan hệ với các nước trên thế giới.", "Liên minh với Nga."], c: 2 },
+        { q: "Sự trỗi dậy của EU tác động đến xu thế nào?", a: ["Thế giới ba cực.", "Thế giới đơn cực.", "Thế giới hai cực.", "Thế giới đa cực."], c: 3 },
+        { q: "Hệ quả quan trọng của cách mạng KH-CN từ những năm 80?", a: ["Thay đổi cơ cấu dân cư.", "Diễn ra xu thế toàn cầu hóa.", "Thành tựu sinh học.", "Máy tính ra đời."], c: 1 },
+        { q: "Mặt hạn chế của toàn cầu hóa?", a: ["Chuyển biến cơ cấu kinh tế.", "Yêu cầu cải cách.", "Thúc đẩy sản xuất.", "Nguy cơ đánh mất bản sắc văn hóa dân tộc."], c: 3 },
+        { q: "Toàn cầu hóa là thực tế không thể đảo ngược vì là?", a: ["Xu thế chủ quan.", "Xu thế khách quan.", "Xu thế đối thoại.", "Mối liên hệ phụ thuộc."], c: 1 },
+        { q: "ASEAN ra đời trong hoàn cảnh nào?", a: ["Thế giới và khu vực đang chuyển biến quan trọng.", "Tất cả các nước ĐNA đã độc lập.", "Chiến tranh lạnh kết thúc.", "Hòa hoãn Đông - Tây là chủ đạo."], c: 0 },
+        { q: "Mục tiêu của ASEAN khi thành lập?", a: ["Phát triển kinh tế và văn hóa qua nỗ lực hợp tác chung.", "Phát triển mọi mặt.", "Giúp Đông Dương giành độc lập.", "Giải quyết vấn đề Biển Đông."], c: 0 },
+        { q: "VN gia nhập ASEAN (1995) tác động như thế nào?", a: ["Đập tan âm mưu phương Tây.", "Củng cố độc lập.", "Đẩy nhanh quá trình phát triển của ASEAN.", "Thúc đẩy phi thực dân hóa."], c: 2 },
+        { q: "Nhật Bản trọng tâm đối ngoại vào ĐNA từ những năm 90 vì?", a: ["Khu vực đông dân, giàu tài nguyên.", "Xu thế chung.", "Cạnh tranh với Nga.", "Xây dựng căn cứ."], c: 0 },
+        { q: "Nguyên nhân ASEAN hợp tác với 3 nước Đông Dương từ đầu năm 90?", a: ["Chiến tranh lạnh chấm dứt.", "Xu thế chung.", "Vấn đề Cam-pu-chia được giải quyết.", "Toàn cầu hóa."], c: 2 },
+        { q: "Cơ hội lớn nhất khi VN gia nhập ASEAN là?", a: ["Thu hút vốn, kĩ thuật, mở rộng thị trường.", "Giao lưu văn hóa.", "Kinh nghiệm quản lý.", "Trao đổi hàng hóa."], c: 0 },
+        { q: "Thủ đoạn chủ yếu của Mỹ trong 'Chiến tranh cục bộ'?", a: ["Trực thăng vận, thiết xa vận.", "Càn quét, bình định.", "Tràn ngập lãnh thổ.", "Tìm diệt và bình định."], c: 3 },
+        { q: "Điểm khác biệt giữa 'Chiến tranh cục bộ' và 'Chiến tranh đặc biệt'?", a: ["Dựa vào viện trợ Mỹ.", "Loại hình thực dân kiểu mới.", "Chiến tranh phá hoại miền Bắc quy mô lớn.", "Biến miền Nam thành thuộc địa."], c: 2 },
+        { q: "'Chiến tranh cục bộ' khác 'Chiến tranh đặc biệt' ở điểm nào?", a: ["Phương tiện chiến tranh.", "Cố vấn chỉ huy.", "Lực lượng tham chiến (quân Mỹ trực tiếp).", "Bản chất chiến lược."], c: 2 },
+        { q: "Chiến thắng góp phần phá sản 'Chiến tranh đặc biệt' năm 1964-1965?", a: ["Ấp Bắc.", "Bình Giã (Bà Rịa).", "Núi Thành.", "Vạn Tường."], c: 1 },
+        { q: "Trong 'Chiến tranh đặc biệt', Mỹ và Sài Gòn tiến hành?", a: ["Phá hoại miền Bắc.", "Dồn dân lập 'ấp chiến lược'.", "Lập chính phủ Diệm.", "Xây dựng lực lượng quân Mỹ."], c: 1 },
+        { q: "Hoạt động buộc Mỹ phải đàm phán tại Pari?", a: ["Tổng tiến công và nổi dậy Xuân 1968.", "Điện Biên Phủ trên không.", "Cánh đồng Chum.", "Tổng tiến công Xuân 1975."], c: 0 },
+        { q: "Nội dung KHÔNG ĐÚNG về vai trò ASEAN với Biển Đông?", a: ["Đoàn kết nhất trí.", "Khẳng định luật pháp quốc tế.", "Lên án xâm phạm chủ quyền.", "Dùng biện pháp quân sự."], c: 3 },
+        { q: "Sự khởi sắc của ASEAN đánh dấu bằng?", a: ["Hiệp ước Ba-li (2/1976).", "VN gia nhập (1995).", "Campuchia gia nhập (1999).", "Hiến chương ASEAN (2007)."], c: 0 },
+        { q: "Ý nào KHÔNG PHẢI nguyên tắc của Hiệp ước Ba-li?", a: ["Tôn trọng chủ quyền.", "Không can thiệp nội bộ.", "Không dùng vũ lực.", "Quyết định phải được 5 nước lớn nhất trí."], c: 3 },
+        { q: "Những nước Đông Nam Á độc lập năm 1945?", a: ["Việt Nam, Inđônêxia, Lào.", "Thái Lan, VN, Lào.", "VN, Lào, Campuchia.", "VN, Inđônêxia, Mianma."], c: 0 },
+        { q: "Biến đổi quan trọng nhất của ĐNA sau CTTG II?", a: ["Gia nhập ASEAN.", "Phát triển kinh tế.", "Giành được độc lập dân tộc.", "Chống đế quốc Âu-Mỹ."], c: 2 },
+        { q: "Thách thức lớn nhất đối với VN khi gia nhập ASEAN?", a: ["Mai một bản sắc.", "Nguy cơ tụt hậu về kinh tế, công nghệ.", "Sử dụng vốn bất hợp lý.", "Điểm xuất phát thấp."], c: 1 },
+        { q: "Thách thức kinh tế mà Cộng đồng ASEAN phải đối mặt?", a: ["Đa dạng chính trị.", "Xung đột biên giới.", "Chênh lệch trình độ phát triển.", "Vấn đề lịch sử."], c: 2 },
+        { q: "Vấn đề Biển Đông tác động thế nào đến ASEAN?", a: ["Thách thức lớn đối với sự phát triển của Cộng đồng.", "Cần đoàn kết để giải quyết.", "Giúp thành khối thống nhất.", "Xóa bỏ mâu thuẫn."], c: 0 },
+        { q: "Tính chất của Cộng đồng Chính trị - An ninh ASEAN (APSC)?", a: ["Phi quân sự.", "Phi hạt nhân.", "Phòng thủ chung.", "Liên minh quân sự."], c: 0 },
+        { q: "Nguyên tắc hoạt động quan trọng nhất của APSC?", a: ["Tôn trọng quyền con người.", "Tuân thủ luật pháp quốc tế.", "Tự do dân chủ.", "Đảm bảo hòa bình, an ninh."], c: 1 },
+        { q: "Mối đe dọa tiềm tàng đến an ninh các nước ĐNA hiện nay?", a: ["Khác biệt thể chế.", "Chênh lệch trình độ.", "Vấn đề tranh chấp ở Biển Đông.", "Xung đột biên giới trên bộ."], c: 2 },
+        { q: "Nguyện vọng của các nước ĐNA khi xây dựng Cộng đồng ASEAN?", a: ["Một khu vực hữu nghị, hợp tác.", "Thiết lập liên minh quân sự.", "Gạt bỏ ảnh hưởng của Pháp.", "Liên kết chặt chẽ mọi mặt."], c: 0 },
+        { q: "Tính chất của Cách mạng tháng Tám 1945?", a: ["Dân chủ tư sản.", "Dân chủ tư sản kiểu mới.", "XHCN.", "Giải phóng dân tộc."], c: 3 },
+        { q: "Tổ chức tiền thân của Quân đội nhân dân Việt Nam?", a: ["Du kích Bắc Sơn.", "Việt Nam Tuyên truyền Giải phóng quân.", "Cứu quốc quân I.", "Tự vệ vũ trang."], c: 1 },
+        { q: "Kẻ thù chính xác định trong chỉ thị 'Nhật - Pháp bắn nhau...'?", a: ["Trung Hoa Dân quốc.", "Phát xít Nhật.", "Quân Mỹ.", "Quân Pháp."], c: 1 },
+        { q: "Nguyên nhân quyết định thắng lợi Cách mạng tháng Tám?", a: ["Truyền thống yêu nước.", "Liên minh công nông.", "Nhật đầu hàng Đồng minh.", "Sự lãnh đạo của Đảng Cộng sản Đông Dương."], c: 3 },
+        { q: "Khởi nghĩa đô thị thắng lợi có ý nghĩa quyết định nhất vì?", a: ["Là trung tâm chính trị, kinh tế của kẻ thù.", "Nhiều đế quốc.", "Quần chúng giác ngộ.", "Cơ quan đầu não cách mạng."], c: 0 },
+        { q: "Ý nghĩa lịch sử to lớn của Hội nghị Trung ương 5/1941?", a: ["Đưa nhiệm vụ giải phóng dân tộc lên hàng đầu.", "Thành lập mặt trận Phản đế.", "Hoàn chỉnh chủ trương chuyển hướng chỉ đạo chiến lược.", "Thành lập mặt trận Việt Minh."], c: 2 },
+        { q: "Lý do chủ yếu Đảng phát động kháng chiến toàn quốc?", a: ["Pháp khiêu khích ở Hà Nội.", "Pháp không thực hiện hiệp định.", "Nền độc lập chủ quyền bị đe dọa nghiêm trọng.", "Muốn hòa bình."], c: 2 },
+        { q: "Điểm chung của chiến dịch Việt Bắc 1947 và Biên giới 1950?", a: ["Khai thông sang TQ.", "Hậu phương.", "Chiến trường Đông Dương.", "Căn cứ địa Việt Bắc."], c: 3 },
+        { q: "Nhiệm vụ trọng tâm của cuộc chiến đô thị phía Bắc vĩ tuyến 16 (1946-1947)?", a: ["Giữ thế chủ động.", "Giam chân quân Pháp một thời gian.", "Phá hủy vật chất.", "Tiêu diệt toàn bộ binh lực."], c: 1 },
+        { q: "Ý nghĩa quan trọng nhất của chiến thắng Việt Bắc 1947?", a: ["Phản công đầu tiên thắng lợi.", "Trưởng thành quân đội.", "Buộc Pháp phải chuyển sang đánh lâu dài.", "Đẩy lùi tấn công."], c: 2 },
+        { q: "Cuộc chiến đấu ở đô thị phía Bắc vĩ tuyến 16 đã?", a: ["Giam chân Pháp để ta rút về chiến khu.", "Buộc Pháp đánh lâu dài.", "Giành thế chủ động.", "Buộc Pháp ký Hiệp định Giơ-ne-vơ."], c: 0 },
+        { q: "Tại Đại hội II (1951), Đảng lấy tên là?", a: ["Đảng Cộng sản Đông Dương.", "Đảng Lao động Đông Dương.", "Đảng Lao động Việt Nam.", "Đảng Cộng sản Việt Nam."], c: 2 },
+        { q: "Kế hoạch Đờ-lát đơ Tát-xi-nhi khiến kháng chiến như thế nào?", a: ["Hậu phương bị phá.", "Vùng kiểm soát thu hẹp.", "Quân chủ lực phân tán.", "Cuộc kháng chiến thêm khó khăn."], c: 3 },
+        { q: "Hiệp định Giơ-ne-vơ ghi nhận:", a: ["Các quyền dân tộc cơ bản của 3 nước Đông Dương.", "Quyền độc lập tự do.", "Quyền tổng tuyển cử.", "Quyền tập kết."], c: 0 },
+        { q: "Thắng lợi Đông - Xuân 1953-1954 và Điện Biên Phủ tạo điều kiện cho?", a: ["Đấu tranh ngoại giao thắng lợi.", "Đấu tranh quân sự.", "Cả quân sự và ngoại giao thắng lợi.", "Miền Bắc lên XHCN."], c: 2 },
+        { q: "Chiến thắng bước đầu làm phá sản kế hoạch Nava?", a: ["Việt Bắc 1947.", "Biên giới 1950.", "Tiến công chiến lược Đông - Xuân 1953-1954.", "Chiến dịch Trung du."], c: 2 },
+        { q: "Sự kiện buộc Pháp chấm dứt chiến tranh, rút quân về nước?", a: ["Đông Xuân 1953-1954.", "Biên giới 1950.", "Điện Biên Phủ thắng lợi.", "Hiệp định Giơ-ne-vơ 1954 được ký kết."], c: 3 },
+        { q: "Kháng chiến chống Pháp (1945-1954) cổ vũ phong trào nào?", a: ["Giải phóng dân tộc.", "Hòa bình.", "Dân chủ.", "Không liên kết."], c: 0 },
+        { q: "Hạn chế của Hiệp định Giơ-ne-vơ đối với VN?", a: ["Chưa giải phóng vùng nào.", "Mới giải phóng được miền Bắc.", "Chỉ giải phóng miền Nam.", "Giải phóng Tây Bắc."], c: 1 },
+        { q: "Kháng chiến chống Pháp kết thúc bằng sự kiện nào?", a: ["Đông Xuân 1953-1954.", "Biên giới 1950.", "Điện Biên Phủ.", "Hiệp định Giơ-ne-vơ được ký kết."], c: 3 },
+        { q: "Tác động của Hiệp định Giơ-ne-vơ?", a: ["Mỹ hết can thiệp.", "Hoàn thành CM dân tộc dân chủ cả nước.", "Phong kiến sụp đổ.", "Buộc Pháp chấm dứt xâm lược, rút quân về nước."], c: 3 },
+        { q: "Nhận định 'Chiến dịch lịch sử... ý nghĩa quân sự và chính trị quan trọng' nói về?", a: ["Việt Bắc 1947.", "Biên giới 1950.", "Đông Xuân 1953-1954.", "Chiến dịch Điện Biên Phủ 1954."], c: 1 },
+        { q: "Thắng lợi trong 'Chiến tranh cục bộ' (1965-1968)?", a: ["Ấp Bắc.", "Vạn Tường.", "Bình Giã.", "An Lão."], c: 1 },
+        { q: "Hội nghị Trung ương 15 (1/1959) chủ trương?", a: ["Chiến tranh du kích.", "Hiệp thương tổng tuyển cử.", "Sử dụng bạo lực cách mạng.", "Chính trị và ngoại giao."], c: 2 },
+        { q: "Ý nghĩa phong trào Đồng khởi (1959-1960)?", a: ["Buộc Diệm thi hành Hiệp định.", "Chuyển CM miền Nam từ thế giữ gìn lực lượng sang thế tiến công.", "Thất bại âm mưu Mỹ.", "Tan rã chủ lực Sài Gòn."], c: 1 },
+        { q: "Điểm giống giữa Cách mạng tháng Tám và phong trào Đồng khởi?", a: ["Vũ trang nòng cốt.", "Từ khởi nghĩa từng phần lên chiến tranh.", "Kết hợp đấu tranh chính trị và vũ trang.", "Từ khởi nghĩa từng phần lên Tổng khởi nghĩa."], c: 2 },
+        { q: "Thủ đoạn MỚI trong 'Việt Nam hóa chiến tranh'?", a: ["Ấp chiến lược.", "Đưa quân Mỹ vào.", "Trực thăng vận.", "Thỏa hiệp với Trung Quốc, Liên Xô."], c: 3 },
+        { q: "Mỹ đánh B52 vào Hà Nội, Hải Phòng năm 1972 nhằm?", a: ["Cứu nguy Chiến tranh cục bộ.", "Giành thắng lợi quân sự quyết định để tạo ưu thế trên bàn đàm phán.", "Ngăn chặn chi viện.", "Bảo vệ Campuchia."], c: 1 },
+        { q: "Sự kiện tháng 4/1970 thể hiện đoàn kết 3 nước Đông Dương?", a: ["Mặt trận dân tộc giải phóng.", "Liên minh nhân dân.", "Hội nghị cấp cao ba nước Việt Nam - Lào - Campuchia.", "Gia nhập ASEAN."], c: 2 },
+        { q: "Kháng chiến chống Mỹ diễn ra trong bối cảnh quốc tế nào?", a: ["Đất nước bị chia cắt.", "Chiến tranh lạnh và cục diện đối đầu Đông - Tây.", "Liên Xô ủng hộ ngay từ đầu.", "Toàn cầu hóa mạnh mẽ."], c: 1 }
+    ];
+
+    let currentQuestions = [];
+
+    // Thuật toán xáo trộn Fisher-Yates
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    // Xáo trộn cả câu hỏi và đáp án
+    function prepareQuizData() {
+        // Sao chép sâu mảng gốc để không làm hỏng dữ liệu ban đầu
+        let shuffled = JSON.parse(JSON.stringify(originalQuestions));
+        
+        // 1. Xáo trộn thứ tự các câu hỏi
+        shuffle(shuffled);
+
+        // 2. Xáo trộn thứ tự đáp án trong mỗi câu hỏi
+        shuffled.forEach(item => {
+            const correctText = item.a[item.c]; // Lưu lại nội dung đáp án đúng
+            shuffle(item.a); // Xáo trộn mảng đáp án
+            item.c = item.a.indexOf(correctText); // Cập nhật lại chỉ số đáp án đúng mới
+        });
+
+        return shuffled;
+    }
+
+    function renderQuiz() {
+        const container = document.getElementById('quiz-content');
+        container.innerHTML = "";
+        currentQuestions.forEach((item, index) => {
+            let html = `<div class="question-box" id="q-box-${index}">
+                <span class="q-text"><span class="q-index">Câu ${index + 1}:</span> ${item.q}</span>
+                <div class="options">`;
+            item.a.forEach((option, i) => {
+                html += `
+                <label class="opt-item" id="label-${index}-${i}">
+                    <input type="radio" name="q${index}" value="${i}">
+                    ${String.fromCharCode(65 + i)}. ${option}
+                </label>`;
+            });
+            html += `</div></div>`;
+            container.innerHTML += html;
+        });
+    }
+
+    function gradeQuiz() {
+        let score = 0;
+        currentQuestions.forEach((item, index) => {
+            const selected = document.querySelector(`input[name="q${index}"]:checked`);
+            const labels = document.querySelectorAll(`#q-box-${index} .opt-item`);
+            
+            labels.forEach(l => l.classList.remove('user-correct', 'user-wrong', 'correct-ans'));
+            document.getElementById(`label-${index}-${item.c}`).classList.add('correct-ans');
+
+            if (selected) {
+                const userVal = parseInt(selected.value);
+                if (userVal === item.c) {
+                    score++;
+                    document.getElementById(`label-${index}-${userVal}`).classList.add('user-correct');
+                } else {
+                    document.getElementById(`label-${index}-${userVal}`).classList.add('user-wrong');
+                }
+            }
+        });
+
+        document.getElementById('score-display').innerHTML = `KẾT QUẢ: ${score}/${currentQuestions.length} câu đúng (${((score/currentQuestions.length)*10).toFixed(1)} điểm)`;
+        document.getElementById('retry-wrong-btn').style.display = 'inline-block';
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    function retryWrong() {
+        currentQuestions.forEach((item, index) => {
+            const selected = document.querySelector(`input[name="q${index}"]:checked`);
+            const labels = document.querySelectorAll(`#q-box-${index} .opt-item`);
+            labels.forEach(l => l.classList.remove('user-correct', 'user-wrong', 'correct-ans'));
+
+            if (selected && parseInt(selected.value) !== item.c) {
+                selected.checked = false;
+            }
+        });
+        document.getElementById('score-display').innerText = "Đã xóa các câu sai. Mời bạn làm lại!";
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    function shuffleAndReset() {
+        if(confirm("Xáo trộn lại toàn bộ câu hỏi và đáp án?")) {
+            currentQuestions = prepareQuizData();
+            renderQuiz();
+            document.getElementById('score-display').innerText = "Đã xáo trộn mới! Bắt đầu nào.";
+            document.getElementById('retry-wrong-btn').style.display = 'none';
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+    }
+
+    function resetCurrent() {
+        if(confirm("Làm lại bộ câu hỏi hiện tại? (Giữ nguyên thứ tự)")) {
+            document.getElementById('quiz-form').reset();
+            const allLabels = document.querySelectorAll('.opt-item');
+            allLabels.forEach(l => l.classList.remove('user-correct', 'user-wrong', 'correct-ans'));
+            document.getElementById('score-display').innerText = "Đã làm mới lựa chọn.";
+            document.getElementById('retry-wrong-btn').style.display = 'none';
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+    }
+
+    // Khởi tạo lần đầu
+    currentQuestions = prepareQuizData();
+    renderQuiz();
+</script>
+</body>
+</html>
